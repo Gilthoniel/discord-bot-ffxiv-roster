@@ -2,7 +2,7 @@ const logger = require('winston');
 const parser = require('./parser');
 const calendar = require('./calendar');
 
-module.exports = (message, bot) => {
+module.exports = async (message, bot) => {
   if (!message.content.startsWith('!')) {
     return;
   }
@@ -12,13 +12,13 @@ module.exports = (message, bot) => {
 
   switch (cmd.name) {
     case 'add':
-      calendar.add(cmd);
+      await calendar.add(cmd);
       break;
     case 'check':
-      calendar.list(cmd);
+      await calendar.list(cmd);
       break;
     case 'reset':
-      calendar.reset(cmd);
+      await calendar.reset(cmd);
       break;
     default:
       logger.info(`commande inconnue ${cmd.name}`);

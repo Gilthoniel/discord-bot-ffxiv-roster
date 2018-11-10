@@ -1,5 +1,4 @@
 const moment = require('moment');
-const logger = require('winston');
 const discord = require('discord.js');
 const {
   db,
@@ -39,48 +38,40 @@ function parseInput(input) {
   };
 }
 
-exports.add = async ({ message, args }) => {
+exports.add = ({ message, args }) => {
   const { guild, member, channel } = message;
 
-  try {
-    await db.transaction(async (tx) => {
-      if (!(await recordExists(tx, TABLE_GUILD, guild.id))) {
-        await tx(TABLE_GUILD).insert({ id: guild.id });
-      }
-      if (!(await recordExists(tx, TABLE_CHANNEL, channel.id))) {
-        await tx(TABLE_CHANNEL).insert({ id: channel.id, guild_id: channel.id });
-      }
-      if (!(await recordExists(tx, TABLE_USER, member.id))) {
-        await tx(TABLE_USER).insert({ id: member.id });
-      }
+  return db.transaction(async (tx) => {
+    if (!(await recordExists(tx, TABLE_GUILD, guild.id))) {
+      await tx(TABLE_GUILD).insert({ id: guild.id });
+    }
+    if (!(await recordExists(tx, TABLE_CHANNEL, channel.id))) {
+      await tx(TABLE_CHANNEL).insert({ id: channel.id, guild_id: channel.id });
+    }
+    if (!(await recordExists(tx, TABLE_USER, member.id))) {
+      await tx(TABLE_USER).insert({ id: member.id });
+    }
 
-      // eslint-disable-next-line
-      const { start_date, end_date } = parseInput(args);
+    // eslint-disable-next-line
+    const { start_date, end_date } = parseInput(args);
 
-      await tx(TABLE_ROSTER_AVAILABLE).insert({
-        user_id: member.id,
-        channel_id: channel.id,
-        start_date,
-        end_date,
-      });
+    await tx(TABLE_ROSTER_AVAILABLE).insert({
+      user_id: member.id,
+      channel_id: channel.id,
+      start_date,
+      end_date,
     });
-  } catch (e) {
-    logger.error(e.message);
-  }
+  });
 };
 
 exports.reset = ({ message }) => {
   const { member } = message;
 
-  try {
-    db.transaction(async (tx) => {
-      await tx(TABLE_ROSTER_AVAILABLE).where({ user_id: member.id }).delete();
+  return db.transaction(async (tx) => {
+    await tx(TABLE_ROSTER_AVAILABLE).where({ user_id: member.id }).delete();
 
-      message.reply('Next week is cleared !');
-    });
-  } catch (e) {
-    logger.error(e.message);
-  }
+    message.reply('Next week is cleared !');
+  });
 };
 
 function generateFields(events) {
@@ -107,26 +98,22 @@ exports.list = async ({ message }) => {
   const lowerBound = now.valueOf();
   const upperBound = now.add(7, 'day').endOf('day').valueOf();
 
-  try {
-    await db.transaction(async (tx) => {
-      const events = await tx(TABLE_ROSTER_AVAILABLE)
-        .where({ user_id: member.id })
-        .whereBetween('start_date', [lowerBound, upperBound])
-        .orderBy('start_date');
+  return db.transaction(async (tx) => {
+    const events = await tx(TABLE_ROSTER_AVAILABLE)
+      .where({ user_id: member.id })
+      .whereBetween('start_date', [lowerBound, upperBound])
+      .orderBy('start_date');
 
-      const fields = generateFields(events);
+    const fields = generateFields(events);
 
-      const msg = new discord.RichEmbed();
-      msg.setDescription(`${member}`);
+    const msg = new discord.RichEmbed();
+    msg.setDescription(`${member}`);
 
-      Object.keys(fields).forEach(key => msg.addField(key, fields[key], true));
-      for (let i = 0; i < 3 - (Object.keys(fields).length % 3); i += 1) {
-        msg.addBlankField(true);
-      }
+    Object.keys(fields).forEach(key => msg.addField(key, fields[key], true));
+    for (let i = 0; i < 3 - (Object.keys(fields).length % 3); i += 1) {
+      msg.addBlankField(true);
+    }
 
-      message.channel.send(msg);
-    });
-  } catch (e) {
-    logger.error(e.message);
-  }
+    message.channel.send(msg);
+  });
 };

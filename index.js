@@ -10,9 +10,14 @@ bot.on('ready', () => {
   logger.info(`Logged in as: ${bot.user.tag}`);
 });
 
-bot.on('message', (message) => {
+bot.on('message', async (message) => {
   logger.info(`received message from ${message.guild.id}`);
-  dispatcher(message, bot);
+  try {
+    await dispatcher(message, bot);
+  } catch (e) {
+    logger.error(`dispatcher: ${e.toString()}`);
+    message.channel.send('Oops, what are you trying to do ?!');
+  }
 });
 
 bot.login(auth.token);
