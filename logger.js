@@ -8,10 +8,15 @@ const {
 
 const myFormat = printf(info => `${info.timestamp}: [${info.level}] ${info.message}`);
 
+const myTransports = [new transports.Console()];
+if (process.env.NODE_ENV === 'production') {
+  myTransports.push(new transports.File({ filename: '/var/log/discord-bot/current.log' }));
+}
+
 module.exports = createLogger({
   format: combine(
     timestamp(),
     myFormat,
   ),
-  transports: [new transports.Console()],
+  transports: myTransports,
 });

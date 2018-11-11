@@ -5,7 +5,7 @@
     "main": "index.js",
     "author": "Gaylor Bosson",
     "scripts": {
-        "start": "node index.js",
+        "start": "NODE_ENV=production node index.js",
         "dev": "node-dev index.js"
     },
     "dependencies": {
