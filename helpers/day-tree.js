@@ -1,4 +1,3 @@
-const logger = require('winston');
 
 const values = {
   dimanche: 0,
@@ -53,7 +52,6 @@ class TreeNode {
       const target = this.children[index];
 
       if (target instanceof TreeNodeLeaf) {
-        logger.info('test');
         const node = new TreeNode();
         // add the previous leaf by shrinking the first letter
         node.add(target.key, target.value);
