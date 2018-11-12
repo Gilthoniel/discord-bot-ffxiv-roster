@@ -81,6 +81,8 @@ exports.add = ({ message, args }) => {
       start_date: minStartDate,
       end_date: maxEndDate,
     });
+
+    message.reply('disponibilité ajoutée');
   });
 };
 
@@ -90,7 +92,7 @@ exports.reset = ({ message }) => {
   return db.transaction(async (tx) => {
     await tx(TABLE_ROSTER_AVAILABLE).where({ user_id: member.id }).delete();
 
-    message.reply('Next week is cleared !');
+    message.reply('semaine remise à zéro!');
   });
 };
 

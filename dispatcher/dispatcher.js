@@ -11,15 +11,19 @@ module.exports = async (message, bot) => {
   logger.info(`dispatch command "${cmd.name}" from user ${message.member.id}`);
 
   switch (cmd.name) {
+    case 'dispo':
     case 'add':
       await calendar.add(cmd);
       break;
+    case 'moi':
     case 'check':
       await calendar.check(cmd);
       break;
+    case 'sorties':
     case 'agg':
       await calendar.agg(cmd);
       break;
+    case 'raz':
     case 'reset':
       await calendar.reset(cmd);
       break;
