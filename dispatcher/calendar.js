@@ -163,7 +163,7 @@ async function fetchMembers(tx, message) {
 }
 
 function roundDate(date) {
-  if (date.minutes() < 30) {
+  if (date.minutes() > 0 && date.minutes() < 30) {
     date.minutes(30);
   } else if (date.minutes() > 30) {
     date.add(1, 'hour').startOf('hour');
