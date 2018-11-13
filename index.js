@@ -19,4 +19,6 @@ bot.on('message', async (message) => {
   }
 });
 
+bot.on('error', e => logger.error(e.stack));
+
 bot.login(auth.token);
