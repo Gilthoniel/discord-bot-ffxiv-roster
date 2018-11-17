@@ -64,8 +64,8 @@ exports.add = ({ message, args }) => {
     const events = await tx(TABLE_ROSTER_AVAILABLE)
       .where({ channel_id: channel.id, user_id: member.id })
       .andWhere((builder) => {
-        builder.whereBetween('end_date', [startDate, endDate])
-          .orWhereBetween('start_date', [startDate, endDate]);
+        builder.whereBetween('end_date', [startDate.toDate(), endDate.toDate()])
+          .orWhereBetween('start_date', [startDate.toDate(), endDate.toDate()]);
       });
 
     // get the widest range of existing entries
