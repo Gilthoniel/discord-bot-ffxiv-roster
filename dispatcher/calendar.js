@@ -131,10 +131,7 @@ exports.check = ({ message }) => {
     const msg = new discord.RichEmbed();
     msg.setDescription(`${member}`);
 
-    Object.keys(fields).forEach(key => msg.addField(key, fields[key], true));
-    for (let i = 0; i < 3 - (Object.keys(fields).length % 3); i += 1) {
-      msg.addBlankField(true);
-    }
+    Object.keys(fields).forEach(key => msg.addField(key, fields[key]));
 
     await message.channel.send(msg);
   });
