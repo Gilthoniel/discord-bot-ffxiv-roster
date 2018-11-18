@@ -206,7 +206,13 @@ function makeBuckets(agg) {
     }
   });
 
-  return slots.sort(([,, a], [,, b]) => b.length - a.length);
+  return slots.sort(([aStart, aEnd, a], [bStart, bEnd, b]) => {
+    if (b.length === a.length) {
+      return (bEnd - bStart) - (aEnd - aStart);
+    }
+
+    return b.length - a.length;
+  });
 }
 
 exports.agg = async ({ message }) => {
@@ -229,7 +235,7 @@ exports.agg = async ({ message }) => {
   msg.setDescription('Les 3 meilleurs disponibilités pour la semaine prochaine sont données ci-dessous avec les participants et les heures');
 
   slots.slice(0, 5)
-    .forEach(([start, end, names]) => msg.addField(formatRange(start, end), names.join(', '), true));
+    .forEach(([start, end, names]) => msg.addField(formatRange(start, end), names.sort().join(', '), true));
 
   await message.channel.send(msg);
 };
