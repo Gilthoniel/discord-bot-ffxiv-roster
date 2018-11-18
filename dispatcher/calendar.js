@@ -229,7 +229,6 @@ exports.agg = async ({ message }) => {
   msg.setDescription('Les 3 meilleurs disponibilités pour la semaine prochaine sont données ci-dessous avec les participants et les heures');
 
   slots.slice(0, 5)
-    .filter(([start, end]) => end - start > moment.duration(1, 'hour').asMilliseconds())
     .forEach(([start, end, names]) => msg.addField(formatRange(start, end), names.join(', '), true));
 
   await message.channel.send(msg);
