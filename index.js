@@ -2,6 +2,7 @@ const Discord = require('discord.js');
 const logger = require('./logger');
 const auth = require('./auth.json');
 const dispatcher = require('./dispatcher/dispatcher');
+require('./helpers/moment-locale-fr');
 
 const bot = new Discord.Client();
 

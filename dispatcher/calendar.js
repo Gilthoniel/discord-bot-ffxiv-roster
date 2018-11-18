@@ -9,6 +9,8 @@ const {
 } = require('../db/db');
 const DayTree = require('../helpers/day-tree');
 
+moment.locale('fr');
+
 async function recordExists(tx, table, id) {
   const exists = await tx(table).where({ id }).first();
 
