@@ -144,8 +144,8 @@ exports.check = ({ message }) => {
  * @param {int} start start date
  * @param {int} end end date
  */
-function formatRange(start, end) {
-  return `${moment(start).format('dddd DD.MM[\n]HH[h]mm')} - ${moment(end).format('HH[h]mm')}`;
+function formatRange(start, end, names) {
+  return `${moment(start).format('dddd DD.MM[\n]HH[h]mm')} - ${moment(end).format('HH[h]mm')} (${names.length})`;
 }
 
 /**
@@ -237,7 +237,7 @@ exports.agg = async ({ message }) => {
   msg.setDescription('Les 3 meilleurs disponibilités pour la semaine prochaine sont données ci-dessous avec les participants et les heures');
 
   slots.slice(0, 5)
-    .forEach(([start, end, names]) => msg.addField(formatRange(start, end), names.sort().join(', '), true));
+    .forEach(([start, end, names]) => msg.addField(formatRange(start, end, names), names.sort().join(', ')));
 
   await message.channel.send(msg);
 };
