@@ -29,7 +29,7 @@ function parseInput(input) {
   const startDate = moment(matches[2].toLowerCase(), 'HH[h]mm').day(day);
   const endDate = moment(matches[3].toLowerCase(), 'HH[h]mm').day(day);
 
-  if (startDate.isBefore(moment(), 'hour')) {
+  if (startDate.isBefore(moment().endOf('day'), 'minute')) {
     startDate.add(7, 'day');
     endDate.add(7, 'day');
   }
@@ -84,7 +84,7 @@ exports.add = ({ message, args }) => {
       end_date: maxEndDate,
     });
 
-    message.reply('disponibilité ajoutée');
+    message.reply(`disponibilité ajoutée pour ${startDate.format('dddd DD.MM')}`);
   });
 };
 
