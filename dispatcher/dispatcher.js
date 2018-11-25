@@ -19,6 +19,9 @@ module.exports = async (message, bot) => {
     case 'remove':
       await calendar.remove(cmd);
       break;
+    case 'copy':
+      await calendar.copy(cmd);
+      break;
     case 'moi':
     case 'check':
       await calendar.check(cmd);

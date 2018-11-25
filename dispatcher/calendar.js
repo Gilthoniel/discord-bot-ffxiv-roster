@@ -17,6 +17,20 @@ async function recordExists(tx, table, id) {
   return exists != null;
 }
 
+async function populateDB(tx, message) {
+  const { guild, member, channel } = message;
+
+  if (!(await recordExists(tx, TABLE_GUILD, guild.id))) {
+    await tx(TABLE_GUILD).insert({ id: guild.id });
+  }
+  if (!(await recordExists(tx, TABLE_CHANNEL, channel.id))) {
+    await tx(TABLE_CHANNEL).insert({ id: channel.id, guild_id: channel.id });
+  }
+  if (!(await recordExists(tx, TABLE_USER, member.id))) {
+    await tx(TABLE_USER).insert({ id: member.id });
+  }
+}
+
 const REGEXP_INPUT_ADD = /([a-zA-Z]{1,12})\s+([0-9]{1,2}(?:[hH]?[0-9]{1,2})?)[^0-9]+([0-9]{1,2}(?:[hH]?[0-9]{1,2})?)/;
 
 function parseInput(input) {
@@ -47,18 +61,10 @@ function parseInput(input) {
  * Syntax: !add $day $startHour $endHour
  */
 exports.add = ({ message, args }) => {
-  const { guild, member, channel } = message;
+  const { member, channel } = message;
 
   return db.transaction(async (tx) => {
-    if (!(await recordExists(tx, TABLE_GUILD, guild.id))) {
-      await tx(TABLE_GUILD).insert({ id: guild.id });
-    }
-    if (!(await recordExists(tx, TABLE_CHANNEL, channel.id))) {
-      await tx(TABLE_CHANNEL).insert({ id: channel.id, guild_id: channel.id });
-    }
-    if (!(await recordExists(tx, TABLE_USER, member.id))) {
-      await tx(TABLE_USER).insert({ id: member.id });
-    }
+    await populateDB(tx, message);
 
     const { startDate, endDate } = parseInput(args);
 
@@ -106,18 +112,10 @@ function parseRemoveInput(args) {
 }
 
 exports.remove = ({ message, args }) => {
-  const { member, guild, channel } = message;
+  const { member, channel } = message;
 
   return db.transaction(async (tx) => {
-    if (!(await recordExists(tx, TABLE_GUILD, guild.id))) {
-      await tx(TABLE_GUILD).insert({ id: guild.id });
-    }
-    if (!(await recordExists(tx, TABLE_CHANNEL, channel.id))) {
-      await tx(TABLE_CHANNEL).insert({ id: channel.id, guild_id: channel.id });
-    }
-    if (!(await recordExists(tx, TABLE_USER, member.id))) {
-      await tx(TABLE_USER).insert({ id: member.id });
-    }
+    await populateDB(tx, message);
 
     const date = parseRemoveInput(args);
     await tx(TABLE_ROSTER_AVAILABLE)
@@ -129,11 +127,47 @@ exports.remove = ({ message, args }) => {
   });
 };
 
-exports.reset = ({ message }) => {
-  const { member } = message;
+exports.copy = ({ message }) => {
+  const { member, channel } = message;
 
   return db.transaction(async (tx) => {
-    await tx(TABLE_ROSTER_AVAILABLE).where({ user_id: member.id }).delete();
+    await populateDB(tx, message);
+
+    const pastMonday = moment().startOf('week');
+    const pastSaturday = pastMonday.clone().add(5, 'day').endOf('day');
+
+    // reset current week
+    await tx(TABLE_ROSTER_AVAILABLE)
+      .where({ user_id: member.id, channel_id: channel.id })
+      .whereBetween('start_date', [pastSaturday.valueOf(), pastSaturday.clone().add(7, 'day').valueOf()])
+      .delete();
+
+    // copy past week
+    const events = await tx(TABLE_ROSTER_AVAILABLE)
+      .whereBetween('start_date', [pastMonday.valueOf(), pastSaturday.valueOf()])
+      .where({ user_id: member.id, channel_id: channel.id });
+
+    await Promise.all(events.map(evt => tx(TABLE_ROSTER_AVAILABLE).insert({
+      user_id: member.id,
+      channel_id: channel.id,
+      start_date: moment(evt.start_date).add(7, 'day').toDate(),
+      end_date: moment(evt.end_date).add(7, 'day').toDate(),
+    })));
+
+    message.reply('Semaine passée copiée');
+  });
+};
+
+exports.reset = ({ message }) => {
+  const { member, channel } = message;
+
+  return db.transaction(async (tx) => {
+    const pastMonday = moment().day(1).startOf('day');
+
+    await tx(TABLE_ROSTER_AVAILABLE)
+      .where({ user_id: member.id, channel_id: channel.id })
+      .whereBetween('start_date', [pastMonday.valueOf(), pastMonday.add(7, 'day').endOf('day').valueOf()])
+      .delete();
 
     message.reply('semaine remise à zéro!');
   });
