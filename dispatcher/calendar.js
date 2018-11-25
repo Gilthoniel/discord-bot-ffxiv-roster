@@ -17,10 +17,10 @@ async function recordExists(tx, table, id) {
   return exists != null;
 }
 
-const REGEXP_INPUT = /([a-zA-Z]{1,12})\s+([0-9]{1,2}(?:[hH]?[0-9]{1,2})?)[^0-9]+([0-9]{1,2}(?:[hH]?[0-9]{1,2})?)/;
+const REGEXP_INPUT_ADD = /([a-zA-Z]{1,12})\s+([0-9]{1,2}(?:[hH]?[0-9]{1,2})?)[^0-9]+([0-9]{1,2}(?:[hH]?[0-9]{1,2})?)/;
 
 function parseInput(input) {
-  const matches = input.trim().match(REGEXP_INPUT);
+  const matches = input.trim().match(REGEXP_INPUT_ADD);
   if (!matches) {
     throw new Error('bad input');
   }
@@ -88,6 +88,47 @@ exports.add = ({ message, args }) => {
   });
 };
 
+const REGEXP_INPUT_REMOVE = /[a-zA-Z]{1,12}/;
+
+function parseRemoveInput(args) {
+  const matches = args.trim().match(REGEXP_INPUT_REMOVE);
+  if (!matches) {
+    throw new Error(`bad input: "${args}"`);
+  }
+
+  const day = DayTree.get(matches[0]);
+  const date = moment().day(day);
+  if (date.isBefore(moment().endOf('day'), 'minute')) {
+    date.add(7, 'day');
+  }
+
+  return date;
+}
+
+exports.remove = ({ message, args }) => {
+  const { member, guild, channel } = message;
+
+  return db.transaction(async (tx) => {
+    if (!(await recordExists(tx, TABLE_GUILD, guild.id))) {
+      await tx(TABLE_GUILD).insert({ id: guild.id });
+    }
+    if (!(await recordExists(tx, TABLE_CHANNEL, channel.id))) {
+      await tx(TABLE_CHANNEL).insert({ id: channel.id, guild_id: channel.id });
+    }
+    if (!(await recordExists(tx, TABLE_USER, member.id))) {
+      await tx(TABLE_USER).insert({ id: member.id });
+    }
+
+    const date = parseRemoveInput(args);
+    await tx(TABLE_ROSTER_AVAILABLE)
+      .whereBetween('start_date', [date.startOf('day').valueOf(), date.endOf('day').valueOf()])
+      .where({ user_id: member.id, channel_id: channel.id })
+      .delete();
+
+    message.reply(`${date.format('dddd')} remis à zéro`);
+  });
+};
+
 exports.reset = ({ message }) => {
   const { member } = message;
 
@@ -104,13 +145,13 @@ function generateFields(events) {
   events.forEach((evt) => {
     const start = moment(evt.start_date);
     const end = moment(evt.end_date);
-    const day = start.format('dddd');
+    const day = start.format('dddd DD.MM');
 
     if (!Object.prototype.hasOwnProperty.call(fields, day)) {
       fields[day] = '';
     }
 
-    fields[day] += `${start.format('HH[h]mm')}-${end.format('HH[h]mm')} `;
+    fields[day] += `${start.format('HH[h]mm')}-${end.format('HH[h]mm')}`;
   });
 
   return fields;
@@ -130,12 +171,16 @@ exports.check = ({ message }) => {
 
     const fields = generateFields(events);
 
-    const msg = new discord.RichEmbed();
-    msg.setDescription(`${member}`);
+    if (Object.keys(fields).length > 0) {
+      const msg = new discord.RichEmbed();
+      msg.setDescription(`${member}`);
 
-    Object.keys(fields).forEach(key => msg.addField(key, fields[key]));
+      Object.keys(fields).forEach(key => msg.addField(key, fields[key]));
 
-    await message.channel.send(msg);
+      await message.channel.send(msg);
+    } else {
+      message.reply('Pas de disponibilités pour la semaine prochaine');
+    }
   });
 };
 
