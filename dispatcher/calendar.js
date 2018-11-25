@@ -217,11 +217,12 @@ function makeBuckets(agg) {
   });
 }
 
-exports.agg = async ({ message }) => {
+exports.agg = async ({ message, args }) => {
   const { channel } = message;
   const now = moment().startOf('day');
   const lowerBound = now.valueOf();
   const upperBound = now.add(7, 'day').endOf('day').valueOf();
+  const size = Math.max(3, parseInt(args, 10) || 0);
 
   const events = await db(TABLE_ROSTER_AVAILABLE)
     .where({ channel_id: channel.id })
@@ -234,9 +235,9 @@ exports.agg = async ({ message }) => {
 
   const msg = new discord.RichEmbed();
   msg.setTitle('Prochaines sorties');
-  msg.setDescription('Les 3 meilleurs disponibilités pour la semaine prochaine sont données ci-dessous avec les participants et les heures');
+  msg.setDescription(`Les ${size} meilleurs disponibilités pour la semaine prochaine sont données ci-dessous avec les participants et les heures`);
 
-  slots.slice(0, 5)
+  slots.slice(0, size)
     .forEach(([start, end, names]) => msg.addField(formatRange(start, end, names), names.sort().join(', ')));
 
   await message.channel.send(msg);
