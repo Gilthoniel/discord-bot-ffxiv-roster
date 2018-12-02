@@ -235,7 +235,7 @@ async function fetchMembers(tx, message) {
   const { guild, channel } = message;
 
   const ids = await tx(TABLE_ROSTER_AVAILABLE).select('user_id').distinct().where({ channel_id: channel.id });
-  const results = await Promise.all(ids.map(id => guild.fetchMember(id.user_id)));
+  const results = await Promise.all(ids.map(id => guild.fetchMember(id.user_id).catch(() => ({ user: { id: id.user_id }, nickname: 'unknown' }))));
   const users = {};
 
   results.forEach(({ user, nickname }) => { users[user.id] = nickname || user.username; });
