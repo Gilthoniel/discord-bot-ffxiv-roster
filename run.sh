@@ -1,4 +1,8 @@
 #!/bin/bash
 
-kill $(pgrep npm)
-nohup npm start &
+if [ -f running_pid ]; then
+  kill $(cat running_pid)
+fi
+
+nohup npm start >> /var/log/discord-bot/current.log 2>&1 &
+echo $! > running_pid

@@ -1,4 +1,4 @@
 /node_modules
 auth.json
 **/db.sqlite
-nohup.out
+running_pid
